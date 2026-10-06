@@ -41,8 +41,7 @@ Os servidores de arquivos e dados do Tribunal Superior Eleitoral possuem regras 
 Para rodar e testar o projeto no seu computador:
 
 ### 1. Clonar o Repositório
-```bash
-git clone [https://github.com/FabioHenrique-Dev-Br/Elei-o-API.git](https://github.com/FabioHenrique-Dev-Br/Elei-o-API.git)
+```bashgit clone [https://github.com/FabioHenrique-Dev-Br/Elei-o-API.git](https://github.com/FabioHenrique-Dev-Br/Elei-o-API.git) ```
 
 2. Abrir no VS Code
 Abra a pasta do projeto no VS Code e inicie a execução através da extensão Live Server.

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Candidatos à Presidência - Consulta API TSE</title>
+  
+  <!-- Tailwind CSS & FontAwesome -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    .bg-tse { background-color: #003366; }
+    .text-tse { color: #003366; }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen text-gray-800 flex flex-col justify-between">
+
+  <!-- CABEÇALHO -->
+  <header class="bg-tse text-white shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 py-6 flex flex-col md:flex-row justify-between items-center gap-4">
+      <div class="flex items-center space-x-3">
+        <i class="fa-solid fa-vote-yea text-3xl text-yellow-400"></i>
+        <div>
+          <h1 class="text-2xl font-bold tracking-wide">Painel Presidencial</h1>
+          <p class="text-xs text-gray-300">Consulta de candidatos via API REST do TSE</p>
+        </div>
+      </div>
+
+      <!-- SELETOR DO ANO ELEITORAL -->
+      <div>
+        <label for="anoSelect" class="block text-xs text-gray-300 mb-1">Ano da Eleição:</label>
+        <select id="anoSelect" onchange="carregarCandidatos()" class="bg-gray-800 text-white text-sm rounded px-3 py-1.5 border border-gray-600 focus:outline-none focus:border-yellow-400">
+          <option value="2026" selected>2026 (Eleição Geral)</option>
+          <option value="2022">2022 (Eleição Geral)</option>
+          <option value="2018">2018 (Eleição Geral)</option>
+        </select>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTEÚDO PRINCIPAL -->
+  <main class="max-w-7xl mx-auto px-4 py-8 flex-grow w-full">
+
+    <!-- BARRA DE PESQUISA -->
+    <div class="bg-white p-4 rounded-xl shadow-md mb-8 flex flex-col md:flex-row gap-4 justify-between items-center">
+      <div class="relative w-full md:w-96">
+        <input 
+          type="text" 
+          id="searchInput" 
+          oninput="filtrarCandidatos()" 
+          placeholder="Buscar por nome, partido ou número..." 
+          class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-800"
+        >
+        <i class="fa-solid fa-search absolute left-3 top-3 text-gray-400"></i>
+      </div>
+
+      <div id="statusInfo" class="text-sm font-medium text-gray-600 flex items-center gap-2">
+        <span>Aguardando consulta...</span>
+      </div>
+    </div>
+
+    <!-- ANIMAÇÃO DE CARREGAMENTO -->
+    <div id="loading" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 hidden">
+      <div class="col-span-full text-center py-12">
+        <i class="fa-solid fa-circle-notch animate-spin text-4xl text-blue-900 mb-3"></i>
+        <p class="text-gray-600 font-medium">Buscando lista de candidatos no TSE...</p>
+      </div>
+    </div>
+
+    <!-- GRID DE CARDS DE CANDIDATOS -->
+    <div id="candidatosGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
+  </main>
+
+  <!-- MODAL DE DETALHES -->
+  <div id="modalDetalhes" class="fixed inset-0 bg-black bg-opacity-60 hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+      <button onclick="fecharModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-800 text-2xl font-bold">&times;</button>
+      <div id="modalContent" class="text-center"></div>
+    </div>
+  </div>
+
+  <!-- RODAPÉ -->
+  <footer class="bg-gray-800 text-gray-400 text-center py-4 text-sm border-t border-gray-700">
+    <p>Dados consultados na plataforma de Divulgação de Candidaturas e Contas Eleitorais do TSE.</p>
+  </footer>
+
+  <!-- SCRIPT -->
+  <script>
+    // Códigos oficiais dos pleitos do TSE para Presidência
+    const ELEICAO_CODES = {
+      "2026": "20322002026",
+      "2022": "2040602022",
+      "2018": "2022802018"
+    };
+
+    let todosCandidatos = [];
+
+    // Busca os candidatos via API
+    async function carregarCandidatos() {
+      const ano = document.getElementById('anoSelect').value;
+      const codEleicao = ELEICAO_CODES[ano];
+
+      const grid = document.getElementById('candidatosGrid');
+      const loading = document.getElementById('loading');
+      const statusInfo = document.getElementById('statusInfo');
+
+      grid.innerHTML = '';
+      loading.classList.remove('hidden');
+      statusInfo.innerHTML = `<i class="fa-solid fa-spinner animate-spin text-blue-600"></i> Consultando TSE (${ano})...`;
+
+      const urlTse = `https://divulgacandcontas.tse.jus.br/divulga/rest/v1/candidatura/listar/${ano}/BR/${codEleicao}/1/candidatos`;
+
+      try {
+        const response = await fetch(urlTse);
+        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+        
+        const data = await response.json();
+        todosCandidatos = data.candidatos || [];
+
+        statusInfo.innerHTML = `<span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-bold">${todosCandidatos.length} Candidatos Encontrados</span>`;
+        renderizarCandidatos(todosCandidatos);
+      } catch (error) {
+        console.error('Erro na requisição:', error);
+        statusInfo.innerHTML = `<span class="text-red-600 font-bold">Erro ao carregar candidatos</span>`;
+      } finally {
+        loading.classList.add('hidden');
+      }
+    }
+
+    // Renderiza a lista na tela
+    function renderizarCandidatos(lista) {
+      const grid = document.getElementById('candidatosGrid');
+      grid.innerHTML = '';
+
+      if (lista.length === 0) {
+        grid.innerHTML = `<div class="col-span-full text-center py-12 text-gray-500">Nenhum candidato a presidente encontrado para este ano.</div>`;
+        return;
+      }
+
+      lista.forEach((cand, index) => {
+        // Endpoint oficial de foto no TSE
+        const fotoUrl = `https://divulgacandcontas.tse.jus.br/divulga/rest/v1/candidatura/buscar/foto/${cand.id}`;
+        const situacao = cand.descricaoSituacao || cand.descricaoSituação || 'DEFERIDO';
+        
+        // Avatar em SVG caso a imagem oficial seja bloqueada sem a extensão
+        const avatarFallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(cand.nomeUrna)}&background=003366&color=fff&size=128`;
+
+        const card = document.createElement('div');
+        card.className = "bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 p-5 flex flex-col items-center text-center border border-gray-100 relative";
+        
+        card.innerHTML = `
+          <div class="absolute top-3 right-3 bg-blue-100 text-blue-900 text-xs font-bold px-2 py-1 rounded-md">
+            ${cand.partido ? cand.partido.sigla : 'N/A'}
+          </div>
+          
+          <img 
+            src="${fotoUrl}" 
+            alt="${cand.nomeUrna}" 
+            referrerpolicy="no-referrer"
+            class="w-32 h-32 object-cover rounded-full border-4 border-blue-900 shadow mb-4 bg-gray-100"
+            onerror="this.onerror=null; this.src='${avatarFallback}';"
+          >
+          
+          <h2 class="text-lg font-bold text-gray-800 leading-tight mb-1">${cand.nomeUrna}</h2>
+          <p class="text-xs text-gray-500 mb-3 min-h-[32px] flex items-center justify-center">${cand.nomeColigacao || cand.coligacao || 'Partido Isolado'}</p>
+          
+          <div class="w-full bg-gray-50 py-2 rounded-lg mb-4 flex justify-around text-xs border">
+            <div>
+              <span class="block text-gray-400">Número</span>
+              <span class="font-extrabold text-blue-900 text-sm">${cand.numero}</span>
+            </div>
+            <div>
+              <span class="block text-gray-400">Situação</span>
+              <span class="font-bold text-green-700">${situacao}</span>
+            </div>
+          </div>
+
+          <button 
+            onclick="abrirModalPorIndice(${index})" 
+            class="mt-auto w-full bg-tse hover:bg-blue-900 text-white font-semibold py-2 px-4 rounded-xl text-sm transition-colors duration-200"
+          >
+            Ver Detalhes
+          </button>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    // Modal com detalhes do candidato
+    function abrirModalPorIndice(index) {
+      const cand = todosCandidatos[index];
+      if (!cand) return;
+
+      const ano = document.getElementById('anoSelect').value;
+      const modal = document.getElementById('modalDetalhes');
+      const modalContent = document.getElementById('modalContent');
+      
+      const fotoUrl = `https://divulgacandcontas.tse.jus.br/divulga/rest/v1/candidatura/buscar/foto/${cand.id}`;
+      const avatarFallback = `https://ui-avatars.com/api/?name=${encodeURIComponent(cand.nomeUrna)}&background=003366&color=fff&size=128`;
+
+      modalContent.innerHTML = `
+        <img 
+          src="${fotoUrl}" 
+          referrerpolicy="no-referrer" 
+          onerror="this.onerror=null; this.src='${avatarFallback}';" 
+          class="w-28 h-28 object-cover rounded-full mx-auto border-4 border-blue-900 mb-3 shadow bg-gray-100"
+        >
+        <h3 class="text-xl font-bold text-gray-800">${cand.nomeUrna}</h3>
+        <p class="text-xs text-gray-500 mb-4">${cand.nomeCompleto || cand.nomeUrna}</p>
+        
+        <div class="text-left text-xs bg-gray-50 p-4 rounded-xl space-y-2 border">
+          <p><strong>Número na Urna:</strong> ${cand.numero}</p>
+          <p><strong>Partido:</strong> ${cand.partido ? cand.partido.sigla : 'N/A'}</p>
+          <p><strong>Coligação:</strong> ${cand.nomeColigacao || cand.coligacao || 'Partido Isolado'}</p>
+          <p><strong>Cargo:</strong> Presidente da República</p>
+          <p><strong>Ano Eleitoral:</strong> ${ano}</p>
+          <p><strong>Situação:</strong> ${cand.descricaoSituacao || cand.descricaoSituação || 'DEFERIDO'}</p>
+        </div>
+      `;
+
+      modal.classList.remove('hidden');
+    }
+
+    function fecharModal() {
+      document.getElementById('modalDetalhes').classList.add('hidden');
+    }
+
+    // Busca rápida em tempo real
+    function filtrarCandidatos() {
+      const termo = document.getElementById('searchInput').value.toLowerCase();
+      const filtrados = todosCandidatos.filter(cand => {
+        const nome = (cand.nomeUrna || '').toLowerCase();
+        const partido = (cand.partido ? cand.partido.sigla : '').toLowerCase();
+        const numero = String(cand.numero || '');
+        return nome.includes(termo) || partido.includes(termo) || numero.includes(termo);
+      });
+      renderizarCandidatos(filtrados);
+    }
+
+    window.onload = carregarCandidatos;
+  </script>
+</body>
+</html>

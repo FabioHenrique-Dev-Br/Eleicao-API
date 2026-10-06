@@ -43,3 +43,27 @@ Para rodar e testar o projeto no seu computador:
 ### 1. Clonar o Repositório
 ```bash
 git clone [https://github.com/FabioHenrique-Dev-Br/Elei-o-API.git](https://github.com/FabioHenrique-Dev-Br/Elei-o-API.git)
+
+2. Abrir no VS Code
+Abra a pasta do projeto no VS Code e inicie a execução através da extensão Live Server.
+
+3. Ativar a Extensão de Navegador
+Para permitir a passagem das requisições e a exibição dos dados do TSE no ambiente local:
+
+Instale a extensão Allow CORS: Access-Control-Allow-Origin no seu navegador (Chrome ou Edge).
+
+Clique no ícone da extensão no topo do navegador para ativá-la (o botão ficará ON / colorido).
+
+Atualize a página do Live Server (F5).
+
+🌐 Informações e Fontes Oficiais
+Para consultar as diretrizes de candidaturas, regras eleitorais e os conjuntos de dados originais disponibilizados pela Justiça Eleitoral:
+
+Para conferir relatórios, prestação de contas e a plataforma oficial de candidaturas, acesse o portal do DivulgaCandContas do TSE.
+
+Para obter conjuntos de dados públicos e estatísticas de pleitos, acesse o Portal de Dados Abertos do TSE.
+
+👨‍💻 Autor
+Desenvolvido por Fábio Henrique
+
+GitHub: FabioHenrique-Dev-Br
